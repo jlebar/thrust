@@ -2,10 +2,11 @@ import os
 
 Import('env')
 
-extensions = ['*.cu', '*.cpp']
+#extensions = ['*.cu', '*.cpp']
+extensions = []
 
 # gather sources in .
-sources = []
+sources = env.Glob('cuda/testframework.cu')
 for ext in extensions:
   sources.extend(env.Glob(ext))
 
