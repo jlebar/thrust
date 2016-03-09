@@ -43,6 +43,7 @@ future<void> async_in_stream(ExecutionGroup g, Closure c, cudaStream_t s, cudaEv
 #endif
 
   bulk::detail::cuda_launcher<ExecutionGroup, Closure> launcher;
+  printf("bulk::detail::async_in_stream\n");
   launcher.launch(g, c, s);
 
   return future_core_access::create(s, false);
@@ -73,6 +74,7 @@ future<void> async(ExecutionGroup g, Closure c, cudaEvent_t before_event)
   bulk::detail::terminate_with_message("async_in_stream(): cudaStreamWaitEvent requires CUDART");
 #endif
 
+  printf("bulk::detail::async\n");
   bulk::detail::cuda_launcher<ExecutionGroup, Closure> launcher;
   launcher.launch(g, c, s);
 

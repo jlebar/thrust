@@ -349,7 +349,7 @@ class concurrent_group
         m_heap_size(heap_size)
     {}
 
-    __device__
+    __device__ __thrust_forceinline__
     void wait() const
     {
       // guard use of __syncthreads from foreign compilers

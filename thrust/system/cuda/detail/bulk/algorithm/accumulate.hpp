@@ -32,7 +32,8 @@ template<std::size_t bound,
          typename RandomAccessIterator,
          typename T,
          typename BinaryFunction>
-__forceinline__ __device__
+__device__
+__attribute__((noinline))
 T accumulate(const bounded<bound,bulk::agent<grainsize> > &exec,
              RandomAccessIterator first,
              RandomAccessIterator last,
@@ -118,6 +119,7 @@ struct buffer
 
 template<std::size_t groupsize, std::size_t grainsize, typename RandomAccessIterator, typename T, typename BinaryFunction>
 __device__
+__attribute__((noinline))
 T accumulate(bulk::concurrent_group<bulk::agent<grainsize>,groupsize> &g,
              RandomAccessIterator first,
              RandomAccessIterator last,
@@ -197,6 +199,7 @@ T accumulate(bulk::concurrent_group<bulk::agent<grainsize>,groupsize> &g,
 
 template<std::size_t groupsize, std::size_t grainsize, typename RandomAccessIterator, typename T, typename BinaryFunction>
 __device__
+__attribute__((noinline))
 T accumulate(bulk::concurrent_group<bulk::agent<grainsize>, groupsize> &g,
              RandomAccessIterator first,
              RandomAccessIterator last,

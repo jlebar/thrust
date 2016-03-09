@@ -22,7 +22,7 @@ if my_env.subst('$CXX') == 'cl':
 my_env.Append(CPPPATH = Dir('.').srcnode())
 
 # find all .cus & .cpps
-sources = my_env.Glob('reduce_large.cu') + my_env.Glob('unittest_tester.cu') + my_env.Glob('testframework.cpp')
+sources = my_env.Glob('scan.cu') + my_env.Glob('unittest_tester.cu') + my_env.Glob('testframework.cpp')
 #extensions  = ['*.cu', '*.cpp']
 extensions = []
 

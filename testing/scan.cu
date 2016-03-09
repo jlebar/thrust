@@ -16,6 +16,7 @@ template<typename T>
 };
 
 
+#if 0
 template <class Vector>
 void TestScanSimple(void)
 {
@@ -300,13 +301,16 @@ void TestScanMixedTypesDevice(void)
     TestScanMixedTypes< thrust::device_vector<int>, thrust::device_vector<float> >();
 }
 DECLARE_UNITTEST(TestScanMixedTypesDevice);
+#endif
 
 
+#if 0
 template <typename T>
 struct TestScanWithOperator
 {
-  void operator()(const size_t n)
+  void operator()()
   {
+    size_t n = 1565;
     thrust::host_vector<T>   h_input = unittest::random_integers<T>(n);
     thrust::device_vector<T> d_input = h_input;
 
@@ -322,9 +326,44 @@ struct TestScanWithOperator
     ASSERT_EQUAL(d_output, h_output);
   }
 };
-VariableUnitTest<TestScanWithOperator, SignedIntegralTypes> TestScanWithOperatorInstance;
+typedef unittest::type_list<char> OnlyChar;
+SimpleUnitTest<TestScanWithOperator, OnlyChar> TestScanWithOperatorInstance;
+#endif
 
+template <typename T>
+struct ScanComparison
+{
+  void operator()()
+  {
+    using thrust::device_vector;
+    using thrust::inclusive_scan;
+    constexpr size_t n = 512 * 3;//1565;
 
+    device_vector<T> in_ref(n);
+    for (int i = 0; i < n; ++i) {
+      in_ref[i] = 10 * i;
+    }
+    device_vector<T> in_test = in_ref;
+
+    //device_vector<T> out_ref(n);
+    device_vector<T> out_test(n);
+
+    //inclusive_scan(in_ref.begin(), in_ref.end(), out_ref.begin(), max_functor<T>());
+    inclusive_scan(in_test.begin(), in_test.end(), out_test.begin(), max_functor<T>());
+
+    printf("### RESULT ###\n");
+    for (int i = 0; i < n; ++i) {
+      printf("[%d] %d\n", i, (int)out_test[i]);
+    }
+    printf("### END RESULT ###\n");
+
+    //ASSERT_EQUAL(out_test, out_ref);
+  }
+};
+typedef unittest::type_list<int> OnlyInt;
+SimpleUnitTest<ScanComparison, OnlyInt> ScanComparisonInstance;
+
+#if 0
 template <typename T>
 struct TestScanWithOperatorToDiscardIterator
 {
@@ -555,4 +594,4 @@ void TestInclusiveScanWithIndirection(void)
     ASSERT_EQUAL(data[6], T(1));
 }
 DECLARE_VECTOR_UNITTEST(TestInclusiveScanWithIndirection);
-
+#endif

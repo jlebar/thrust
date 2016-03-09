@@ -33,7 +33,8 @@ template<std::size_t bound,
          typename RandomAccessIterator1,
          typename Size,
          typename RandomAccessIterator2>
-__forceinline__ __device__
+__device__
+__attribute__((noinline))
 RandomAccessIterator2 copy_n(const bounded<bound,agent<grainsize> > &b,
                              RandomAccessIterator1 first,
                              Size n,
@@ -171,7 +172,8 @@ template<std::size_t size,
          typename RandomAccessIterator1,
          typename Size,
          typename RandomAccessIterator2>
-__forceinline__ __device__
+__device__
+__attribute__((noinline))
 RandomAccessIterator2 copy_n(concurrent_group<
                                agent<grainsize>,
                                size
@@ -192,7 +194,8 @@ template<std::size_t groupsize,
          typename RandomAccessIterator1,
          typename Size,
          typename RandomAccessIterator2>
-__forceinline__ __device__
+__device__
+__attribute__((noinline))
 RandomAccessIterator2
   copy_n(bulk::concurrent_group<Executor,groupsize> &g, RandomAccessIterator1 first, Size n, RandomAccessIterator2 result)
 {
@@ -202,6 +205,7 @@ RandomAccessIterator2
 
 template<std::size_t bound, std::size_t groupsize, std::size_t grainsize, typename RandomAccessIterator1, typename Size, typename RandomAccessIterator2>
 __device__
+__attribute__((noinline))
 typename thrust::detail::enable_if<
   (bound <= groupsize * grainsize),
   RandomAccessIterator2 

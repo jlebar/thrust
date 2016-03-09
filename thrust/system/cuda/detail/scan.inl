@@ -225,13 +225,15 @@ OutputIterator inclusive_scan(execution_policy<DerivedPolicy> &exec,
 
   if(n < threshold_of_parallelism)
   {
-    const Size groupsize =
+    /*const Size groupsize =
       sizeof(intermediate_type) <= 2 * sizeof(int) ? 512 :
       sizeof(intermediate_type) <= 4 * sizeof(int) ? 256 :
-      128;
+      128;*/
+    const Size groupsize = 512;
 
     typedef bulk_::detail::scan_detail::scan_buffer<groupsize,3,InputIterator,OutputIterator,AssociativeOperator> heap_type;
     Size heap_size = sizeof(heap_type);
+    printf("inclusive_scan calling async\n");
     bulk_::async(bulk_::grid<groupsize,3>(1, heap_size, s), scan_detail::inclusive_scan_n(), bulk_::root.this_exec, first, n, result, binary_op);
 
     // XXX WAR unused variable warning
@@ -239,6 +241,7 @@ OutputIterator inclusive_scan(execution_policy<DerivedPolicy> &exec,
   } // end if
   else
   {
+#if 0
     const Size groupsize = scan_detail::accumulate_tiles_tuning<intermediate_type>::groupsize;
     const Size grainsize = scan_detail::accumulate_tiles_tuning<intermediate_type>::grainsize;
 
@@ -278,6 +281,7 @@ OutputIterator inclusive_scan(execution_policy<DerivedPolicy> &exec,
     // XXX WAR unused variable warnings
     (void) groupsize2;
     (void) grainsize2;
+#endif
   } // end else
 
   return result + n;

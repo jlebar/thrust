@@ -275,12 +275,18 @@ struct cuda_launcher<
 
           size_type num_physical_blocks = thrust::min<size_type>(num_remaining_physical_blocks, max_physical_grid_size);
 
+          printf(
+              "cuda_launcher launching a block, num_blocks=%llu, "
+              "num_physical_blocks=%llu\n",
+              (long long unsigned)num_blocks,
+              (long long unsigned)num_physical_blocks);
           super_t::launch(num_physical_blocks, block_size, heap_size, stream, task);
 
           num_remaining_physical_blocks -= num_physical_blocks;
         } // end for block_offset
       } // end if
     } // end if
+    printf("cuda_launcher::launch end\n");
   } // end go()
 
   __host__ __device__

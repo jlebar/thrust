@@ -352,6 +352,29 @@ def clang_compiler_flags(mode, arch):
   result = []
   for machine_arch in arch:
     result.append('--cuda-gpu-arch={0}'.format(machine_arch))
+#  result += ['-mllvm', '-disable-post-ra']
+#  result += ['-mllvm', '-disable-branch-fold']
+#  result += ['-mllvm', '-disable-tail-duplicate']
+#  result += ['-mllvm', '-disable-early-taildup']
+#  result += ['-mllvm', '-disable-block-placement']
+#  result += ['-mllvm', '-disable-ssc']
+#  result += ['-mllvm', '-disable-machine-dce']
+#  result += ['-mllvm', '-disable-early-ifcvt']
+#  result += ['-mllvm', '-disable-machine-licm']
+#  result += ['-mllvm', '-disable-machine-cse']
+#  result += ['-mllvm', '-disable-postra-machine-licm']
+#  result += ['-mllvm', '-disable-machine-sink']
+#  result += ['-mllvm', '-disable-lsr']
+#  result += ['-mllvm', '-disable-constant-hoisting']
+#  result += ['-mllvm', '-disable-cgp']
+#  result += ['-mllvm', '-disable-copyprop']
+#  result += ['-mllvm', '-disable-partial-libcall-inlining']
+  #result += ['-mllvm', '-print-after-all']
+  #result += ['-mllvm', '-verify-machineinstrs']
+
+  if 'INLINE' in ARGUMENTS:
+    result += ['-DINLINE']
+
   return result
 
 def command_line_variables():
