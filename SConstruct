@@ -344,6 +344,9 @@ def nv_compiler_flags(mode, device_backend, arch, cdp):
     if(release[0:5] == '10.8.'):
       result.append('-ccbin')
       result.append(master_env.subst('$CXX'))
+
+  if 'INLINE' in ARGUMENTS:
+    result += ['-DINLINE']
   
   return result
 

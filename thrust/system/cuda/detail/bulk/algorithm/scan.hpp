@@ -101,173 +101,43 @@ struct scan_intermediate
 
 
 template<typename ConcurrentGroup, typename RandomAccessIterator, typename T, typename BinaryFunction>
-__device__ T __attribute__((always_inline)) inplace_exclusive_scan(ConcurrentGroup &g, RandomAccessIterator first, T init, BinaryFunction binary_op)
+inline __device__ T __attribute__((always_inline)) inplace_exclusive_scan(ConcurrentGroup &g, RandomAccessIterator first, T init, BinaryFunction binary_op)
 {
-  // Can't have an early return here; no failure.
+  auto tid = g.this_exec.index();
 
-  typedef typename ConcurrentGroup::size_type size_type;
-
-  size_type tid = g.this_exec.index();
-
-  volatile int* p = first;
-
-  if(tid == 0) {
-    //printf("result[0] = 42\n");
-    p[0] = 42; //binary_op(init, first[0]);
-  }
-
-  //T x = first[tid];
-
-  g.wait();
-
-  if (tid == 1 && p[0] != 42) asm("trap;");
-
-#if 0
-#pragma nounroll
-  for(size_type i = 1; i < g.size(); ++i) {
-    if (tid == 1 && p[0] != 42) asm ("trap;");
-    /*if (i == tid) {
-      //printf("result[%llu] = result[%llu] = %llu\n", (long long unsigned)i,
-      //       (long long unsigned)i - 1, (long long unsigned)first[i - 1]);
-      //p[i] = p[0];
-      if (p[0] != 42) asm ("trap;");
-    }*/
-    g.wait();
-  }
+  auto* p = first;
+  if(tid == 0) p[0] = 42;
+#ifdef __CUDA_ARCH__
+  __syncthreads();
 #endif
-
-#if 0
-  for(size_type offset = 1; offset < g.size(); offset += offset)
-  {
-    if(tid >= offset)
-    {
-      first[tid] = first[tid - offset]; // binary_op(first[tid - offset], x);
-    }
-
-    g.wait();
-
-    //first[tid] = x;
-
-    //g.wait();
-  }
-#endif
-
+  if (tid == 32 && p[0] != 42) asm("trap;");
   return T();
-
-  /*T result = first[g.size() - 1];
-
-  if(tid == 0)
-  {
-    x = init;
-  }
-  else
-  {
-    x = first[tid - 1];
-  }
-
-  g.wait();
-
-  first[tid] = x;
-
-  g.wait();
-
-  return result;*/
 }
-
 
 template<typename ConcurrentGroup, typename RandomAccessIterator, typename Size, typename T, typename BinaryFunction>
-__device__ T __attribute__((always_inline)) small_inplace_exclusive_scan(ConcurrentGroup &g, RandomAccessIterator first, Size n, T init, BinaryFunction binary_op)
+inline __device__ T __attribute__((always_inline)) small_inplace_exclusive_scan(ConcurrentGroup &g, RandomAccessIterator first, Size n, T init, BinaryFunction binary_op)
 {
-  // Also can't have an early return here; no dice.
-  typedef typename ConcurrentGroup::size_type size_type;
-
-  size_type tid = g.this_exec.index();
+  auto tid = g.this_exec.index();
   //asm ("");
 
-  if(tid == 0) {
-    first[0] = 42; //binary_op(init, first[0]);
-  }
-
-  //T x = tid < n ? first[tid] : init;
+  if (tid == 0) first[0] = 42;
   g.wait();
   return T();
-
-#if 0
-#pragma nounroll
-  for(size_type offset = 1; offset < g.size(); offset += offset)
-  {
-    if(tid >= offset && tid - offset < n)
-    {
-      x = binary_op(first[tid - offset], x);
-    }
-
-    g.wait();
-
-    if(tid < n)
-    {
-      first[tid] = x;
-    }
-
-    g.wait();
-  }
-
-  T result = first[n - 1];
-
-  if(tid < n)
-  {
-    if(tid == 0)
-    {
-      x = init;
-    }
-    else
-    {
-      x = first[tid - 1];
-    }
-  }
-
-  g.wait();
-
-  if(tid < n)
-  {
-    first[tid] = x;
-  }
-
-  g.wait();
-
-  return result;
-#endif
 }
 
-
-// the upper bound on n is g.size()
+// the upper bound on n is g.size().
 template<typename ConcurrentGroup, typename RandomAccessIterator, typename Size, typename T, typename BinaryFunction>
 __device__ T
 #ifdef INLINE
-__attribute__((always_inline))
+inline __attribute__((always_inline))
 #else
 __attribute__((noinline))
 #endif
 bounded_inplace_exclusive_scan(ConcurrentGroup &g, RandomAccessIterator first, Size n, T init, BinaryFunction binary_op)
 {
-#if 0
-  T ret;
-  if (n == g.size()) {
-    ret = inplace_exclusive_scan(g, first, init, binary_op);
-  }
-  g.wait();
-  if (n != g.size()) {
-    ret = small_inplace_exclusive_scan(g, first, n, init, binary_op);
-  }
-  return ret;
-#endif
-
-  //return small_inplace_exclusive_scan(g, first, n, init, binary_op);
-
-#if 1
   return n == g.size()
              ? inplace_exclusive_scan(g, first, init, binary_op)
              : small_inplace_exclusive_scan(g, first, n, init, binary_op);
-#endif
 }
 
 template<bool inclusive,
@@ -278,11 +148,6 @@ template<bool inclusive,
          typename BinaryFunction>
 __device__
 __attribute__((noinline))
-// XXX MSVC9 has trouble with this enable_if, so just don't bother with it
-//typename thrust::detail::enable_if<
-//  bound <= groupsize * grainsize,
-//  T
-//>::type
 T
 scan(bulk::bounded<
        bound,
@@ -293,90 +158,11 @@ scan(bulk::bounded<
      T carry_in,
      BinaryFunction binary_op)
 {
-  typedef typename thrust::iterator_value<RandomAccessIterator1>::type input_type;
-
-  typedef typename scan_intermediate<
-    RandomAccessIterator1,
-    RandomAccessIterator2,
-    BinaryFunction
-  >::type intermediate_type;
-
-  typedef typename bulk::bounded<
-    bound,
-    bulk::concurrent_group<bulk::agent<grainsize>,groupsize>
-  >::size_type size_type;
-
-  size_type tid = g.this_exec.index();
-  size_type n = last - first;
-
-  /*if (tid == 0 || tid == 1) {
-    printf("tid = %llu, result = %p\n", (long long unsigned)tid, result);
-  }*/
-
-  //printf("scan(%p, %llu)\n", first, (long long unsigned)n);
-
-  // make a local copy from the input
-  //input_type local_inputs[grainsize];
-  
-  //size_type local_offset = grainsize * tid;
-  //size_type local_size = thrust::max<size_type>(0,thrust::min<size_type>(grainsize, n - grainsize * tid));
-  
-  //bulk::copy_n(bulk::bound<grainsize>(g.this_exec), first + local_offset, local_size, local_inputs);
-  
-  // XXX this should be uninitialized<intermediate_type>
-  /*intermediate_type x;
-  
-  if(local_size)
-  {
-    //x = local_inputs[0];
-    //x = bulk::accumulate(bulk::bound<grainsize-1>(g.this_exec), local_inputs + 1, local_inputs + local_size, x, binary_op);
-  } // end if
-  
-  g.wait();
-  
-  if(local_size)
-  {
-    //printf("YYY result[%llu] = %lld\n", (long long unsigned)tid, (long long)x);
-    //result[tid] = x;
-  } // end if
-  
-  g.wait();*/
-
-  // count the number of spine elements
-  const size_type spine_n = (n >= g.size() * g.this_exec.grainsize()) ? g.size() : (n + g.this_exec.grainsize() - 1) / g.this_exec.grainsize();
-
-  // exclusive scan the array of per-thread sums
-  // XXX this call is another bounded scan
-  //     the bound is groupsize
-  carry_in = bounded_inplace_exclusive_scan(g, result, spine_n, carry_in, binary_op);
-
+  auto n = last - first;
+  const auto spine_n = (n >= g.size() * g.this_exec.grainsize()) ? g.size() : (n + g.this_exec.grainsize() - 1) / g.this_exec.grainsize();
+  bounded_inplace_exclusive_scan(g, result, spine_n, carry_in, binary_op);
   return T();
-#if 0
-  if(local_size)
-  {
-    x = result[tid];
-  } // end if
-  
-  g.wait();
-#ifdef __CUDA_ARCH__
-  __threadfence_system();
-#endif
-  return carry_in;
-  
-  if(inclusive)
-  {
-    bulk::inclusive_scan(bulk::bound<grainsize>(g.this_exec), local_inputs, local_inputs + local_size, result + local_offset, x, binary_op);
-  } // end if
-  else
-  {
-    bulk::exclusive_scan(bulk::bound<grainsize>(g.this_exec), local_inputs, local_inputs + local_size, result + local_offset, x, binary_op);
-  } // end else
-  
-  g.wait();
-
-  return carry_in;
-#endif
-} // end scan()
+}
 
 
 template<std::size_t groupsize, std::size_t grainsize, typename RandomAccessIterator1, typename RandomAccessIterator2, typename BinaryFunction>
